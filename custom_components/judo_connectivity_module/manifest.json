@@ -1,0 +1,15 @@
+{
+  "domain": "judo_connectivity_module",
+  "name": "Judo Connectivity Module",
+  "codeowners": [
+    "@christoefle"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/christoefle/homeassistant-integration-blueprint",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/christoefle/homeassistant-integration-blueprint/issues",
+  "requirements": [],
+  "version": "1.0.0",
+  "integration_type": "device"
+}
