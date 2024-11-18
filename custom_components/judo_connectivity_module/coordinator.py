@@ -25,6 +25,7 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
     config_entry: JudoConnectivityModuleConfigEntry
+    _static_data: dict[str, Any] = {}
 
     def __init__(
         self,
@@ -37,11 +38,25 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=timedelta(hours=1),
         )
+        self._static_data = {}
 
-    async def _async_update_data(self) -> Any:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Update data via library."""
         try:
-            return await self.config_entry.runtime_data.client.async_get_data()
+            # Get static data only once
+            if not self._static_data:
+                client = self.config_entry.runtime_data.client
+                self._static_data = {
+                    "device_type": await client.async_get_device_type(),
+                    "serial_number": await client.async_get_serial_number(),
+                }
+
+            # Get dynamic data
+            dynamic_data = await self.config_entry.runtime_data.client.async_get_data()
+
+            # Combine static and dynamic data
+            return {**self._static_data, **dynamic_data}
+
         except JudoConnectivityModuleApiClientAuthenticationError as exception:
             raise ConfigEntryAuthFailed(exception) from exception
         except JudoConnectivityModuleApiClientError as exception:
