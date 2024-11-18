@@ -10,6 +10,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/christoefle/judo_connectivity_module/issues",
   "requirements": [],
-  "version": "1.0.0",
-  "integration_type": "device"
+  "version": "1.0.0"
 }
