@@ -1,0 +1,88 @@
+operations:
+  - name: reset_message
+    description: "Resets the message or error state."
+    command: "/api/rest/6300"
+
+  - name: close_leak_protection
+    description: "Closes the leak protection mechanism."
+    command: "/api/rest/5100"
+
+  - name: open_leak_protection
+    description: "Opens the leak protection mechanism."
+    command: "/api/rest/5200"
+
+  - name: start_sleep_mode
+    description: "Starts sleep mode on the device."
+    command: "/api/rest/5400"
+
+  - name: end_sleep_mode
+    description: "Ends sleep mode on the device."
+    command: "/api/rest/5500"
+
+  - name: start_vacation_mode
+    description: "Activates vacation mode."
+    command: "/api/rest/5700"
+
+  - name: end_vacation_mode
+    description: "Deactivates vacation mode."
+    command: "/api/rest/5800"
+
+  - name: read_device_type
+    description: "Reads the device type."
+    command: "/api/rest/FF00"
+    result:
+      format: "1 byte (HEX)"
+
+  - name: read_software_version
+    description: "Reads the software version of the device."
+    command: "/api/rest/0100"
+    result:
+      format: "3 bytes (HEX)"
+
+  - name: read_start_date
+    description: "Reads the device start date."
+    command: "/api/rest/0E00"
+    result:
+      format: "4 bytes (UNIX timestamp)"
+
+  - name: read_total_water_consumption
+    description: "Reads the total water consumption."
+    command: "/api/rest/2800"
+    result:
+      format: "4 bytes (liters)"
+
+  - name: read_daily_statistics
+    description: "Fetches daily water consumption statistics."
+    command: "/api/rest/FB{date}"
+    parameters:
+      - name: date
+        format: "8 bytes (HEX)"
+    result:
+      format: "32 bytes (hourly statistics in liters)"
+
+  - name: read_weekly_statistics
+    description: "Fetches weekly water consumption statistics."
+    command: "/api/rest/FC{week}"
+    parameters:
+      - name: week
+        format: "2 bytes (HEX)"
+    result:
+      format: "28 bytes (daily totals in liters for 7 days)"
+
+  - name: read_monthly_statistics
+    description: "Fetches monthly water consumption statistics."
+    command: "/api/rest/FD{month}"
+    parameters:
+      - name: month
+        format: "2 bytes (HEX)"
+    result:
+      format: "Up to 124 bytes (daily totals for up to 31 days)"
+
+  - name: read_yearly_statistics
+    description: "Fetches yearly water consumption statistics."
+    command: "/api/rest/FE{year}"
+    parameters:
+      - name: year
+        format: "2 bytes (HEX)"
+    result:
+      format: "48 bytes (monthly totals for 12 months)"
