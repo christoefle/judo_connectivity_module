@@ -28,6 +28,8 @@ ENDPOINT_WEEKLY_STATISTICS = "FC"
 class JudoConnectivityModuleApiClientError(Exception):
     """Exception to indicate a general API error."""
 
+    MESSAGE = "An error occurred in the JUDO Connectivity Module API Client."
+
 
 class JudoConnectivityModuleApiClientCommunicationError(
     JudoConnectivityModuleApiClientError
@@ -74,7 +76,7 @@ class JudoConnectivityModuleApiClient:
                 }
         except Exception as exception:
             raise JudoConnectivityModuleApiClientError(
-                "Error getting data from API"
+                JudoConnectivityModuleApiClientError.MESSAGE
             ) from exception
 
     async def async_get_device_type(self) -> str:
@@ -93,7 +95,9 @@ class JudoConnectivityModuleApiClient:
         """Get remaining water information."""
         response = await self._async_get_endpoint(ENDPOINT_REMAINING_WATER)
         data = response.get("data", "")
-        if len(data) >= 8:  # Ensure we have enough data (8 hex characters)
+        if (
+            len(data) >= 8  # noqa: PLR2004
+        ):  # Ensure we have enough data (8 hex characters)
             # Convert hex to decimal
             value_decimal = int(data, 16)
             # Convert to cubic meters (divide by 1000) then to liters (multiply by 1000)
@@ -148,9 +152,26 @@ class JudoConnectivityModuleApiClient:
             except json.JSONDecodeError:
                 return {"data": text.strip()}
 
+    @property
+    def hostname(self) -> str:
+        """Return the hostname."""
+        return self._hostname
+
+    @property
+    def username(self) -> str:
+        """Return the username."""
+        return self._username
+
+    @property
+    def password(self) -> str:
+        """Return the password."""
+        return self._password
+
 
 def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
     """Verify that response is valid."""
     if response.status in (401, 403):
-        raise JudoConnectivityModuleApiClientAuthenticationError("Invalid credentials")
+        raise JudoConnectivityModuleApiClientAuthenticationError(
+            JudoConnectivityModuleApiClientAuthenticationError.MESSAGE
+        )
     response.raise_for_status()
