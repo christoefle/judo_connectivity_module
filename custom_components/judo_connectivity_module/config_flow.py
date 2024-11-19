@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 import voluptuous as vol
 from dotenv import load_dotenv
@@ -26,6 +27,9 @@ load_dotenv(env_path)
 DEFAULT_HOST = os.getenv("JUDO_DEFAULT_HOST", "192.168.1.1")
 DEFAULT_USERNAME = os.getenv("JUDO_DEFAULT_USERNAME", "admin")
 DEFAULT_PASSWORD = os.getenv("JUDO_DEFAULT_PASSWORD", "admin")
+
+# Define a constant for the expected serial number length
+EXPECTED_SERIAL_LENGTH = 8
 
 
 class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -62,7 +66,7 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
                 serial_hex = serial_number.get("data", "")
                 serial_decoded = (
                     str(int(serial_hex, 16))
-                    if serial_hex and len(serial_hex) == 8
+                    if serial_hex and len(serial_hex) == EXPECTED_SERIAL_LENGTH
                     else ""
                 )
 
@@ -77,7 +81,7 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
                 errors["base"] = "auth"
             except JudoConnectivityModuleApiClientCommunicationError:
                 errors["base"] = "connection"
-            except Exception:  # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except  # noqa: BLE001
                 LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
@@ -129,7 +133,7 @@ class JudoConnectivityModuleOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "auth"
             except JudoConnectivityModuleApiClientCommunicationError:
                 errors["base"] = "connection"
-            except Exception:  # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except  # noqa: BLE001
                 LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 

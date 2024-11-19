@@ -5,16 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import (
+    SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
-    SensorDeviceClass,
 )
 from homeassistant.const import UnitOfVolume
 
 from .entity import JudoConnectivityModuleEntity
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from .coordinator import JudoConnectivityModuleDataUpdateCoordinator
@@ -47,7 +46,6 @@ ENTITY_DESCRIPTIONS = (
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
     entry: JudoConnectivityModuleConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -64,6 +62,8 @@ async def async_setup_entry(
 class JudoConnectivityModuleSensor(JudoConnectivityModuleEntity, SensorEntity):
     """judo_connectivity_module Sensor class."""
 
+    SERIAL_HEX_LENGTH = 8  # Define the expected length of the serial hex string
+
     def __init__(
         self,
         coordinator: JudoConnectivityModuleDataUpdateCoordinator,
@@ -78,10 +78,10 @@ class JudoConnectivityModuleSensor(JudoConnectivityModuleEntity, SensorEntity):
 
     def _convert_hex_to_version(self, hex_value: str) -> str:
         """Convert hex string to version format (e.g., 6b1502 -> 2.21k)."""
-        if not hex_value or len(hex_value) != 6:
+        if not hex_value or len(hex_value) != 6:  # noqa: PLR2004
             return "unknown"
 
-        # Example: "6b1502"
+        # Example provided in spec: "6b1502"
         letter_code = int(hex_value[0:2], 16)  # 6b -> 107 -> 'k'
         minor = int(hex_value[2:4], 16)  # 15 -> 21
         major = int(hex_value[4:6], 16)  # 02 -> 2
@@ -93,7 +93,7 @@ class JudoConnectivityModuleSensor(JudoConnectivityModuleEntity, SensorEntity):
 
     def _convert_hex_to_serial(self, hex_value: str) -> str:
         """Convert hex string to serial number format (e.g., 0774ed0b -> 200111111)."""
-        if not hex_value or len(hex_value) != 8:
+        if not hex_value or len(hex_value) != self.SERIAL_HEX_LENGTH:
             return "unknown"
         # Convert hex to decimal
         return str(int(hex_value, 16))
@@ -104,13 +104,13 @@ class JudoConnectivityModuleSensor(JudoConnectivityModuleEntity, SensorEntity):
         if self.entity_description.key == "device_type":
             device_type = self.coordinator.data.get("device_type", {}).get("data")
             return "PROM-i-SAFE" if device_type == "44" else "JUDO Device"
-        elif self.entity_description.key == "software_version":
+        if self.entity_description.key == "software_version":
             raw_value = self.coordinator.data.get("software_version", {}).get("data")
             return self._convert_hex_to_version(raw_value)
-        elif self.entity_description.key == "serial_number":
+        if self.entity_description.key == "serial_number":
             raw_value = self.coordinator.data.get("serial_number", {}).get("data")
             return self._convert_hex_to_serial(raw_value)
-        elif self.entity_description.key == "remaining_water":
+        if self.entity_description.key == "remaining_water":
             return self.coordinator.data.get("remaining_water", {}).get("liters", 0)
 
         return None

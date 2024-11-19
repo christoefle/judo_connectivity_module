@@ -17,9 +17,11 @@ class JudoConnectivityModuleEntity(
     _attr_attribution = ATTRIBUTION
     _attr_has_entity_name = True
 
+    VERSION_HEX_LENGTH = 6
+
     def _convert_hex_to_version(self, hex_value: str) -> str:
         """Convert hex string to version format."""
-        if not hex_value or len(hex_value) != 6:
+        if not hex_value or len(hex_value) != self.VERSION_HEX_LENGTH:
             return "unknown"
         letter_code = int(hex_value[0:2], 16)
         minor = int(hex_value[2:4], 16)

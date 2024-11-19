@@ -9,7 +9,6 @@ from homeassistant.components.button import ButtonEntity, ButtonEntityDescriptio
 from .entity import JudoConnectivityModuleEntity
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from .data import (
@@ -42,7 +41,6 @@ ENTITY_DESCRIPTIONS = (
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
     entry: JudoConnectivityModuleConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -70,6 +68,10 @@ class JudoConnectivityModuleButton(JudoConnectivityModuleEntity, ButtonEntity):
         self._attr_unique_id = (
             f"{coordinator.config_entry.entry_id}_{entity_description.key}"
         )
+
+    def press(self) -> None:
+        """Handle the button press synchronously."""
+        self.hass.async_create_task(self.async_press())
 
     async def async_press(self) -> None:
         """Handle the button press."""

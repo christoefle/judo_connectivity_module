@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -25,7 +25,7 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
 
     config_entry: JudoConnectivityModuleConfigEntry
-    _static_data: dict[str, Any] = {}
+    _static_data: ClassVar[dict[str, Any]] = {}
 
     def __init__(
         self,
@@ -55,9 +55,11 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
             dynamic_data = await self.config_entry.runtime_data.client.async_get_data()
 
             # Combine static and dynamic data
-            return {**self._static_data, **dynamic_data}
+            combined_data = {**self._static_data, **dynamic_data}
 
         except JudoConnectivityModuleApiClientAuthenticationError as exception:
             raise ConfigEntryAuthFailed(exception) from exception
         except JudoConnectivityModuleApiClientError as exception:
             raise UpdateFailed(exception) from exception
+        else:
+            return combined_data
