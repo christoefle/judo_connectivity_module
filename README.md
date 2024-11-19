@@ -11,11 +11,10 @@ Integration to control and monitor JUDO water treatment devices with connectivit
 
 **This integration will set up the following platforms.**
 
-| Platform        | Description                         |
-| --------------- | ----------------------------------- |
-| `binary_sensor` | Show something `True` or `False`.   |
-| `sensor`        | Show info from blueprint API.       |
-| `switch`        | Switch something `True` or `False`. |
+| Platform | Description                                    |
+| -------- | ---------------------------------------------- |
+| `sensor` | Show information from JUDO Connectivity Module |
+| `button` | Control JUDO device functions                  |
 
 ## Installation
 
