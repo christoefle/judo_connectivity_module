@@ -20,6 +20,9 @@ ENDPOINT_LEAK_PROTECTION_DEACTIVATE = "5200"
 ENDPOINT_SLEEP_MODE_START = "5400"
 ENDPOINT_SLEEP_MODE_END = "5500"
 ENDPOINT_REMAINING_WATER = "6400"
+ENDPOINT_RESET_MESSAGE = "6300"
+ENDPOINT_DAILY_STATISTICS = "FB"
+ENDPOINT_WEEKLY_STATISTICS = "FC"
 
 
 class JudoConnectivityModuleApiClientError(Exception):
@@ -115,6 +118,18 @@ class JudoConnectivityModuleApiClient:
     async def async_end_sleep_mode(self) -> None:
         """End sleep mode."""
         await self._async_get_endpoint(ENDPOINT_SLEEP_MODE_END)
+
+    async def async_reset_message(self) -> None:
+        """Reset message."""
+        await self._async_get_endpoint(ENDPOINT_RESET_MESSAGE)
+
+    async def async_get_daily_statistics(self, date: str) -> dict:
+        """Get daily statistics."""
+        return await self._async_get_endpoint(f"{ENDPOINT_DAILY_STATISTICS}{date}")
+
+    async def async_get_weekly_statistics(self, week: str) -> dict:
+        """Get weekly statistics."""
+        return await self._async_get_endpoint(f"{ENDPOINT_WEEKLY_STATISTICS}{week}")
 
     async def _async_get_endpoint(self, endpoint: str) -> dict:
         """Make a GET request to an endpoint."""
