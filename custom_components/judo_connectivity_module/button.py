@@ -9,6 +9,7 @@ from homeassistant.components.button import ButtonEntity, ButtonEntityDescriptio
 from .entity import JudoConnectivityModuleEntity
 
 if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
     from .data import (
@@ -41,6 +42,7 @@ ENTITY_DESCRIPTIONS = (
 
 
 async def async_setup_entry(
+    hass: HomeAssistant,  # noqa: ARG001 # pylint: disable=unused-argument
     entry: JudoConnectivityModuleConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
