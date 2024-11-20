@@ -1,0 +1,119 @@
+entities:
+  get_device_type:
+    type: "sensor"
+    name: "Device Type"
+    icon: "mdi:water-pump"
+    category: "diagnostic"
+
+  read_serial_number:
+    type: "sensor"
+    name: "Serial Number"
+    icon: "mdi:identifier"
+    category: "diagnostic"
+
+  read_total_water:
+    type: "sensor"
+    name: "Total Water Volume"
+    icon: "mdi:water"
+    device_class: "water"
+    state_class: "total"
+    unit: "m³"
+    category: "diagnostic"
+
+  read_software_version:
+    type: "sensor"
+    name: "Software Version"
+    icon: "mdi:package-variant"
+    category: "diagnostic"
+
+  read_start_date:
+    type: "sensor"
+    name: "Start Date"
+    icon: "mdi:calendar-start"
+    device_class: "timestamp"
+    category: "diagnostic"
+
+  read_datetime:
+    type: "sensor"
+    name: "Device Time"
+    icon: "mdi:clock"
+    device_class: "timestamp"
+    category: "diagnostic"
+
+  reset_message:
+    type: "button"
+    name: "! Reset Message"
+    icon: "mdi:message-badge-outline"
+    category: "config"
+
+  leak_protection_activate:
+    type: "button"
+    name: "Leak Protection: Activate"
+    icon: "mdi:water-alert"
+    category: "config"
+
+  leak_protection_deactivate:
+    type: "button"
+    name: "Leak Protection: Deactivate"
+    icon: "mdi:water-off"
+    category: "config"
+
+  sleep_mode_start:
+    type: "button"
+    name: "Sleep Mode: Start"
+    icon: "mdi:power-sleep"
+    category: "config"
+
+  sleep_mode_end:
+    type: "button"
+    name: "Sleep Mode: End"
+    icon: "mdi:power-on"
+    category: "config"
+
+  vacation_mode_start:
+    type: "button"
+    name: "Vacation Mode: Start"
+    icon: "mdi:airplane"
+    category: "config"
+
+  vacation_mode_end:
+    type: "button"
+    name: "Vacation Mode: End"
+    icon: "mdi:airplane-off"
+    category: "config"
+
+  # read_daily_statistics:
+  #   type: "sensor"
+  #   name: "Daily Water Consumption"
+  #   icon: "mdi:water-percent"
+  #   device_class: "water"
+  #   state_class: "total"
+  #   unit: "m³"
+  #   category: "diagnostic"
+
+  # read_weekly_statistics:
+  #   type: "sensor"
+  #   name: "Weekly Water Consumption"
+  #   icon: "mdi:water-percent"
+  #   device_class: "water"
+  #   state_class: "total"
+  #   unit: "m³"
+  #   category: "diagnostic"
+
+  # read_monthly_statistics:
+  #   type: "sensor"
+  #   name: "Monthly Water Consumption"
+  #   icon: "mdi:water-percent"
+  #   device_class: "water"
+  #   state_class: "total"
+  #   unit: "m³"
+  #   category: "diagnostic"
+
+  # read_yearly_statistics:
+  #   type: "sensor"
+  #   name: "Yearly Water Consumption"
+  #   icon: "mdi:water-percent"
+  #   device_class: "water"
+  #   state_class: "total"
+  #   unit: "m³"
+  #   category: "diagnostic"
