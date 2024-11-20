@@ -16,8 +16,10 @@ from .api import (
     JudoConnectivityModuleApiClient,
     JudoConnectivityModuleApiClientAuthenticationError,
     JudoConnectivityModuleApiClientCommunicationError,
+    JudoConnectivityModuleApiClientError,
 )
 from .const import DOMAIN, LOGGER
+from .utils import decode_serial_number, get_device_name
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent / ".env"
@@ -28,14 +30,9 @@ DEFAULT_HOST = os.getenv("JUDO_DEFAULT_HOST", "192.168.1.1")
 DEFAULT_USERNAME = os.getenv("JUDO_DEFAULT_USERNAME", "admin")
 DEFAULT_PASSWORD = os.getenv("JUDO_DEFAULT_PASSWORD", "Connectivity")
 
-# Define a constant for the expected serial number length
-EXPECTED_SERIAL_LENGTH = 8
-
 
 class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Judo Connectivity Module."""
-
-    VERSION = 1
 
     async def async_step_user(
         self,
@@ -55,7 +52,7 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
 
                 # Get device information for the title
                 device_type = await client.async_get_device_type()
-                serial_number = await client.async_get_serial_number()
+                serial_number = await client.async_read_serial_number()
 
                 # Store the initial data
                 initial_data = {
@@ -65,17 +62,8 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
                 }
 
                 # Determine device name based on type
-                device_name = (
-                    "PROM-i-SAFE" if device_type.get("data") == "44" else "JUDO Device"
-                )
-
-                # Convert serial number from hex to decimal using little-endian
-                serial_hex = serial_number.get("data", "")
-                serial_decoded = (
-                    str(int.from_bytes(bytes.fromhex(serial_hex), byteorder="little"))
-                    if serial_hex and len(serial_hex) == EXPECTED_SERIAL_LENGTH
-                    else ""
-                )
+                device_name = get_device_name(device_type.get("data"))
+                serial_decoded = decode_serial_number(serial_number.get("data", ""))
 
                 # Create title with device name and decoded serial number
                 title = f"{device_name} ({serial_decoded})"
@@ -88,8 +76,8 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
                 errors["base"] = "auth"
             except JudoConnectivityModuleApiClientCommunicationError:
                 errors["base"] = "connection"
-            except Exception:  # pylint: disable=broad-except  # noqa: BLE001
-                LOGGER.exception("Unexpected exception")
+            except JudoConnectivityModuleApiClientError as exception:
+                LOGGER.exception("API error occurred: %s", exception)
                 errors["base"] = "unknown"
 
         return self.async_show_form(
@@ -140,8 +128,8 @@ class JudoConnectivityModuleOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "auth"
             except JudoConnectivityModuleApiClientCommunicationError:
                 errors["base"] = "connection"
-            except Exception:  # pylint: disable=broad-except  # noqa: BLE001
-                LOGGER.exception("Unexpected exception")
+            except JudoConnectivityModuleApiClientError as exception:
+                LOGGER.exception("API error occurred: %s", exception)
                 errors["base"] = "unknown"
 
         return self.async_show_form(

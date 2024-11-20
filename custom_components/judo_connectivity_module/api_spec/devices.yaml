@@ -1,9 +1,12 @@
 # Device type definitions
+api_version: "3.13"
+
 device_types:
-  "44":
+  "68":
     name: "PROM-i-SAFE"
-    description: "JUDO i-soft safe water softening system"
-    capabilities:
+    description: "Domestic water station with integrated microleakage protection system"
+    capabilities: # just a selection of actual capabilities currently listed in operations.yaml
+                  # extend here and in operations.yaml as needed
       - read_device_type
       - read_serial_number
       - read_software_version

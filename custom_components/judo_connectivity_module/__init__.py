@@ -29,16 +29,18 @@ async def async_setup_entry(
     entry: JudoConnectivityModuleConfigEntry,
 ) -> bool:
     """Set up this integration using UI."""
+    client = JudoConnectivityModuleApiClient(
+        hostname=entry.data[CONF_HOST],
+        username=entry.data[CONF_USERNAME],
+        password=entry.data[CONF_PASSWORD],
+        session=async_get_clientsession(hass),
+    )
     coordinator = JudoConnectivityModuleDataUpdateCoordinator(
         hass=hass,
+        client=client,
     )
     entry.runtime_data = JudoConnectivityModuleData(
-        client=JudoConnectivityModuleApiClient(
-            hostname=entry.data[CONF_HOST],
-            username=entry.data[CONF_USERNAME],
-            password=entry.data[CONF_PASSWORD],
-            session=async_get_clientsession(hass),
-        ),
+        client=client,
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
     )

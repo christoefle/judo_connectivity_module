@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 
 from .entity import JudoConnectivityModuleEntity
+from .helpers import load_entity_configs
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -17,42 +18,32 @@ if TYPE_CHECKING:
         JudoConnectivityModuleDataUpdateCoordinator,
     )
 
-ENTITY_DESCRIPTIONS = (
-    ButtonEntityDescription(
-        key="leak_protection_activate",
-        name="Activate Leak Protection",
-        icon="mdi:water-alert",
-    ),
-    ButtonEntityDescription(
-        key="leak_protection_deactivate",
-        name="Deactivate Leak Protection",
-        icon="mdi:water-off",
-    ),
-    ButtonEntityDescription(
-        key="sleep_mode_start",
-        name="Start Sleep Mode",
-        icon="mdi:sleep",
-    ),
-    ButtonEntityDescription(
-        key="sleep_mode_end",
-        name="Stop Sleep Mode",
-        icon="mdi:sleep-off",
-    ),
-)
-
 
 async def async_setup_entry(
-    hass: HomeAssistant,  # noqa: ARG001 # pylint: disable=unused-argument
+    _hass: HomeAssistant,
     entry: JudoConnectivityModuleConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the button platform."""
+    entity_configs = load_entity_configs()
+
+    # Filter for button entities
+    button_entities = [
+        (key, config)
+        for key, config in entity_configs.items()
+        if config.get("type") == "button"
+    ]
+
     async_add_entities(
         JudoConnectivityModuleButton(
             coordinator=entry.runtime_data.coordinator,
-            entity_description=entity_description,
+            entity_description=ButtonEntityDescription(
+                key=key,
+                name=config["name"],
+                icon=config.get("icon"),
+            ),
         )
-        for entity_description in ENTITY_DESCRIPTIONS
+        for key, config in button_entities
     )
 
 
@@ -74,16 +65,3 @@ class JudoConnectivityModuleButton(JudoConnectivityModuleEntity, ButtonEntity):
     def press(self) -> None:
         """Handle the button press synchronously."""
         self.hass.async_create_task(self.async_press())
-
-    async def async_press(self) -> None:
-        """Handle the button press."""
-        client = self.coordinator.config_entry.runtime_data.client
-
-        if self.entity_description.key == "leak_protection_activate":
-            await client.async_activate_leak_protection()
-        elif self.entity_description.key == "leak_protection_deactivate":
-            await client.async_deactivate_leak_protection()
-        elif self.entity_description.key == "sleep_mode_start":
-            await client.async_start_sleep_mode()
-        elif self.entity_description.key == "sleep_mode_end":
-            await client.async_end_sleep_mode()

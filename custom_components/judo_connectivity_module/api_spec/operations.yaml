@@ -1,13 +1,10 @@
 # API Operations
-operations:
-  - name: read_device_type
+api_version: "3.13" # Note: Only parts of the API are listed / supported
+
+operations: # just a subset of operations listed in the api spec dev. extend as needed.
+  - name: get_device_type
     description: "Reads the device type"
     command: "FF00"
-    ha_entity:
-      type: "sensor"
-      name: "Device Type"
-      icon: "mdi:water-pump"
-      category: "diagnostic"
     response:
       pattern: "hex_value"
       length: 1
@@ -16,121 +13,62 @@ operations:
   - name: read_serial_number
     description: "Reads the device serial number"
     command: "0600"
-    ha_entity:
-      type: "sensor"
-      name: "Serial Number"
-      icon: "mdi:identifier"
-      category: "diagnostic"
     response:
       pattern: "hex_value"
       length: 8
       description: "8-byte serial number"
 
-  - name: read_software_version
-    description: "Reads the software version"
-    command: "0100"
-    ha_entity:
-      type: "sensor"
-      name: "Software Version"
-      icon: "mdi:package-variant"
-      category: "diagnostic"
+  - name: read_total_water
+    description: "Reads the total water volume"
+    command: "2800"
     response:
-      pattern: "version"
-      length: 6
-      description: "6-byte version number"
+      pattern: "water_volume"
+      length: 4
+      description: "4-byte water volume in liters"
 
   - name: read_start_date
     description: "Reads the device start date"
     command: "0E00"
-    ha_entity:
-      type: "sensor"
-      name: "Start Date"
-      icon: "mdi:clock-start"
-      device_class: "timestamp"
-      category: "diagnostic"
     response:
       pattern: "timestamp"
       length: 4
       description: "4-byte UNIX timestamp"
 
-  - name: read_total_water
-    description: "Reads total water consumption"
-    command: "2800"
-    ha_entity:
-      type: "sensor"
-      name: "Total Water Consumption"
-      icon: "mdi:water"
-      device_class: "water"
-      state_class: "total_increasing"
-      unit: "m³"
-      category: "diagnostic"
+  - name: read_software_version
+    description: "Reads the software version"
+    command: "0100"
     response:
-      pattern: "water_volume"
-      length: 4
-      description: "4-byte water consumption value in liters (converted to m³)"
+      pattern: "version"
+      length: 6
+      description: "6-byte version number"
 
   - name: reset_message
     description: "Resets the message or error state"
     command: "6300"
-    ha_entity:
-      type: "button"
-      name: "Reset Message"
-      icon: "mdi:message-badge-outline"
-      category: "config"
 
   - name: leak_protection_activate
     description: "Activates leak protection"
     command: "5100"
-    ha_entity:
-      type: "button"
-      name: "Activate Leak Protection"
-      icon: "mdi:water-alert"
-      category: "config"
 
   - name: leak_protection_deactivate
     description: "Deactivates leak protection"
     command: "5200"
-    ha_entity:
-      type: "button"
-      name: "Deactivate Leak Protection"
-      icon: "mdi:water-off"
-      category: "config"
 
   - name: sleep_mode_start
     description: "Starts sleep mode"
     command: "5400"
-    ha_entity:
-      type: "button"
-      name: "Start Sleep Mode"
-      icon: "mdi:power-sleep"
-      category: "config"
 
   - name: sleep_mode_end
     description: "Ends sleep mode"
     command: "5500"
-    ha_entity:
-      type: "button"
-      name: "End Sleep Mode"
-      icon: "mdi:power-on"
-      category: "config"
 
   - name: vacation_mode_start
     description: "Activates vacation mode"
     command: "5700"
-    ha_entity:
-      type: "button"
-      name: "Start Vacation Mode"
-      icon: "mdi:airplane"
-      category: "config"
 
   - name: vacation_mode_end
     description: "Deactivates vacation mode"
     command: "5800"
-    ha_entity:
-      type: "button"
-      name: "End Vacation Mode"
-      icon: "mdi:airplane-off"
-      category: "config"
 
   - name: read_daily_statistics
     description: "Fetches daily water consumption statistics"
@@ -138,15 +76,6 @@ operations:
     parameters:
       - name: date
         pattern: "hex_date"
-        example: "0D0817"  # August 13, 2023
-    ha_entity:
-      type: "sensor"
-      name: "Daily Water Consumption"
-      icon: "mdi:water-percent"
-      device_class: "water"
-      state_class: "total"
-      unit: "m³"
-      category: "diagnostic"
     response:
       pattern: "water_volume"
       statistics: "hourly"
@@ -159,15 +88,6 @@ operations:
     parameters:
       - name: week
         pattern: "hex_week"
-        example: "20"  # Week 32
-    ha_entity:
-      type: "sensor"
-      name: "Weekly Water Consumption"
-      icon: "mdi:water-percent"
-      device_class: "water"
-      state_class: "total"
-      unit: "m³"
-      category: "diagnostic"
     response:
       pattern: "water_volume"
       statistics: "daily"
@@ -180,15 +100,6 @@ operations:
     parameters:
       - name: month
         pattern: "hex_month"
-        example: "08"  # August
-    ha_entity:
-      type: "sensor"
-      name: "Monthly Water Consumption"
-      icon: "mdi:water-percent"
-      device_class: "water"
-      state_class: "total"
-      unit: "m³"
-      category: "diagnostic"
     response:
       pattern: "water_volume"
       statistics: "monthly"
@@ -201,15 +112,6 @@ operations:
     parameters:
       - name: year
         pattern: "hex_year"
-        example: "17"  # 2023
-    ha_entity:
-      type: "sensor"
-      name: "Yearly Water Consumption"
-      icon: "mdi:water-percent"
-      device_class: "water"
-      state_class: "total"
-      unit: "m³"
-      category: "diagnostic"
     response:
       pattern: "water_volume"
       statistics: "monthly"
@@ -219,12 +121,6 @@ operations:
   - name: read_datetime
     description: "Reads the current date and time from the device"
     command: "5900"
-    ha_entity:
-      type: "sensor"
-      name: "Device Date Time"
-      icon: "mdi:clock"
-      device_class: "timestamp"
-      category: "diagnostic"
     response:
       pattern: "datetime_bytes"
       length: 6
