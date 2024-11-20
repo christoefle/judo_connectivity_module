@@ -7,7 +7,6 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/christoefle/judo_connectivity_module",
-  "homeassistant": "2024.2.0",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/christoefle/judo_connectivity_module/issues",
