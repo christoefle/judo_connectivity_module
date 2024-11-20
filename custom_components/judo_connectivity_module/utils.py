@@ -1,6 +1,6 @@
 """Utility functions for JUDO Connectivity Module."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -23,7 +23,7 @@ def decode_timestamp(value: str) -> datetime:
     timestamp = int.from_bytes(bytes.fromhex(value), byteorder="big")
     return datetime.fromtimestamp(
         timestamp,
-        tz=timezone.utc,  # Use UTC timezone  # noqa: UP017
+        tz=UTC,
     )
 
 
@@ -50,7 +50,7 @@ def decode_datetime_bytes(value: str) -> datetime:
         hour,
         minute,
         second,
-        tzinfo=timezone.utc,  # Use UTC timezone  # noqa: UP017
+        tzinfo=UTC,
     )
 
 

@@ -1,6 +1,6 @@
 """Integration tests for JUDO Connectivity Module."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -32,7 +32,7 @@ async def test_coordinator_update(hass: HomeAssistant) -> None:
     }
     mock_client.async_read_datetime.return_value = {
         "data": "170807E71520",
-        "decoded": datetime(2023, 8, 23, 21, 32, 0, tzinfo=timezone.utc),  # noqa: UP017
+        "decoded": datetime(2023, 8, 23, 21, 32, 0, tzinfo=UTC),
     }
 
     coordinator = JudoConnectivityModuleDataUpdateCoordinator(
@@ -63,7 +63,10 @@ async def test_error_handling(hass: HomeAssistant) -> None:
     mock_client = AsyncMock(spec=JudoConnectivityModuleApiClient)
     mock_client.async_get_device_type.side_effect = Exception("Test error")
 
-    coordinator = JudoConnectivityModuleDataUpdateCoordinator(hass=hass)
+    coordinator = JudoConnectivityModuleDataUpdateCoordinator(
+        hass=hass,
+        client=mock_client,
+    )
 
     # Test error handling during update
     with pytest.raises(Exception, match="Test error"):
