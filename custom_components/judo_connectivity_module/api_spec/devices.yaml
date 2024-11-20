@@ -1,0 +1,23 @@
+# Device type definitions
+device_types:
+  "44":
+    name: "PROM-i-SAFE"
+    description: "JUDO i-soft safe water softening system"
+    capabilities:
+      - read_device_type
+      - read_serial_number
+      - read_software_version
+      - read_start_date
+      - read_total_water
+      - read_daily_statistics
+      - read_weekly_statistics
+      - read_monthly_statistics
+      - read_yearly_statistics
+      - read_datetime
+      - reset_message
+      - leak_protection_activate
+      - leak_protection_deactivate
+      - sleep_mode_start
+      - sleep_mode_end
+      - vacation_mode_start
+      - vacation_mode_end

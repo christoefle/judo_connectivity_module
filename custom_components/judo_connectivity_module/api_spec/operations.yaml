@@ -1,3 +1,5 @@
+# API Operations
+operations:
   - name: read_device_type
     description: "Reads the device type"
     command: "FF00"

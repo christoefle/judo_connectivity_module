@@ -1,0 +1,135 @@
+# API Specification for JUDO Connectivity Module
+api_version: "3.13"
+base_url: "/api/rest"
+
+# Common response patterns that can be reused
+response_patterns:
+  hex_value:
+    encoding: "hex"
+    decode_method: "little_endian_int"
+    description: "Hex value representing a numeric value"
+    python_code: |
+      def decode(value: str) -> int:
+          return int.from_bytes(bytes.fromhex(value), byteorder='little')
+
+  water_volume:
+    encoding: "hex"
+    decode_method: "liters_to_cubic_meters"
+    description: "Hex value representing water volume (converts from liters to m³)"
+    python_code: |
+      def decode(value: str) -> float:
+          liters = int.from_bytes(bytes.fromhex(value), byteorder='little')
+          return round(liters / 1000, 3)  # Convert to m³ with 3 decimal places
+
+  timestamp:
+    encoding: "hex"
+    decode_method: "unix_timestamp"
+    description: "Hex value representing a UNIX timestamp"
+    python_code: |
+      def decode(value: str) -> datetime:
+          timestamp = int.from_bytes(bytes.fromhex(value), byteorder='little')
+          return datetime.fromtimestamp(timestamp)
+
+  version:
+    encoding: "hex"
+    decode_method: "version_string"
+    description: "Hex value representing version (2-letter, 2-minor, 2-major)"
+    python_code: |
+      def decode(value: str) -> str:
+          letter = chr(int(value[0:2], 16))
+          minor = int(value[2:4], 16)
+          major = int(value[4:6], 16)
+          return f"{major}.{minor}{letter}"
+
+  datetime_bytes:
+    encoding: "hex"
+    decode_method: "datetime_from_bytes"
+    description: "6 bytes representing date and time components"
+    python_code: |
+      def decode(value: str) -> datetime:
+          day = int(value[0:2], 16)
+          month = int(value[2:4], 16)
+          year = int(value[4:6], 16) + 2000  # Assuming years are 20xx
+          hour = int(value[6:8], 16)
+          minute = int(value[8:10], 16)
+          second = int(value[10:12], 16)
+          return datetime(year, month, day, hour, minute, second)
+
+parameter_patterns:
+  hex_date:
+    description: "Date in hex format DDMMYY"
+    validation: "^[0-9A-F]{6}$"
+    python_code: |
+      def encode(date: datetime) -> str:
+          return f"{date.day:02X}{date.month:02X}{date.year % 100:02X}"
+
+  hex_week:
+    description: "Week number in hex"
+    validation: "^[0-9A-F]{2}$"
+    python_code: |
+      def encode(week: int) -> str:
+          return f"{week:02X}"
+
+  hex_month:
+    description: "Month number in hex"
+    validation: "^[0-9A-F]{2}$"
+    python_code: |
+      def encode(month: int) -> str:
+          return f"{month:02X}"
+
+  hex_year:
+    description: "Year (last 2 digits) in hex"
+    validation: "^[0-9A-F]{2}$"
+    python_code: |
+      def encode(year: int) -> str:
+          return f"{year % 100:02X}"
+
+# Error responses
+error_responses:
+  400:
+    description: "Bad Request"
+    possible_causes: "No arguments present or command not allowed."
+  401:
+    description: "Authentication failed"
+    possible_causes: "Invalid credentials or session expired."
+  404:
+    description: "Endpoint not found"
+    possible_causes: "The requested API endpoint does not exist."
+  429:
+    description: "Too Many Requests"
+    possible_causes: "Request rate limit exceeded; retry after 2 seconds."
+  500:
+    description: "Internal Server Error"
+    possible_causes: "An unexpected error occurred on the server, or arguments are incorrect or too long."
+  general_errors:
+    RestApiErrorInvalidArgument:
+      code: -1
+      description: "Invalid argument"
+    RestApiErrorInvalidMessage:
+      code: -2
+      description: "Invalid message"
+    RestApiErrorBufferTooSmall:
+      code: -3
+      description: "Buffer too small"
+    RestApiErrorBufferBusy:
+      code: -4
+      description: "Buffer is busy"
+  device_control_errors:
+    error_response_prefix: 0xFF
+    communication_errors:
+      - code: 0
+        description: "Not enough bytes received"
+      - code: 1
+        description: "Internal checksum is incorrect"
+      - code: 2
+        description: "Data (bytes 0,1) are not as expected"
+      - code: 3
+        description: "Function code (bytes 2,3) is not as expected"
+      - code: 4
+        description: "An error response was received"
+      - code: 5
+        description: "A formally correct response was received"
+    examples:
+      INFO_NO_HEADER:
+        description: "Checksum is incorrect"
+        response: "FF0001"
