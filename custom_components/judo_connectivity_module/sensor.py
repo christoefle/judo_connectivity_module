@@ -37,10 +37,10 @@ ENTITY_DESCRIPTIONS = (
         icon="mdi:package-variant",
     ),
     SensorEntityDescription(
-        key="remaining_water",
-        name="Remaining Water",
+        key="total_water_consumed",
+        name="Total Water Consumed",
         icon="mdi:water-percent",
-        native_unit_of_measurement=UnitOfVolume.LITERS,
+        native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
         device_class=SensorDeviceClass.WATER,
     ),
 )
@@ -110,9 +110,13 @@ class JudoConnectivityModuleSensor(JudoConnectivityModuleEntity, SensorEntity):
             raw_value = self.coordinator.data.get("software_version", {}).get("data")
             return self._convert_hex_to_version(raw_value)
         if self.entity_description.key == "serial_number":
-            raw_value = self.coordinator.data.get("serial_number", {}).get("data")
-            return self._convert_hex_to_serial(raw_value)
-        if self.entity_description.key == "remaining_water":
-            return self.coordinator.data.get("remaining_water", {}).get("liters", 0)
+            raw_value = self.coordinator.data.get("serial_number", {}).get(
+                "serial_number"
+            )
+            return raw_value
+        if self.entity_description.key == "total_water_consumed":
+            return self.coordinator.data.get("total_water_consumed", {}).get(
+                "cubic_meters", 0
+            )
 
         return None

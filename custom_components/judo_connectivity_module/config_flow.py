@@ -26,7 +26,7 @@ load_dotenv(env_path)
 # Get default values from environment variables or fall back to defaults
 DEFAULT_HOST = os.getenv("JUDO_DEFAULT_HOST", "192.168.1.1")
 DEFAULT_USERNAME = os.getenv("JUDO_DEFAULT_USERNAME", "admin")
-DEFAULT_PASSWORD = os.getenv("JUDO_DEFAULT_PASSWORD", "admin")
+DEFAULT_PASSWORD = os.getenv("JUDO_DEFAULT_PASSWORD", "Connectivity")
 
 # Define a constant for the expected serial number length
 EXPECTED_SERIAL_LENGTH = 8
@@ -57,15 +57,22 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
                 device_type = await client.async_get_device_type()
                 serial_number = await client.async_get_serial_number()
 
+                # Store the initial data
+                initial_data = {
+                    **user_input,
+                    "initial_device_type": device_type,
+                    "initial_serial_number": serial_number,
+                }
+
                 # Determine device name based on type
                 device_name = (
                     "PROM-i-SAFE" if device_type.get("data") == "44" else "JUDO Device"
                 )
 
-                # Convert serial number from hex to decimal
+                # Convert serial number from hex to decimal using little-endian
                 serial_hex = serial_number.get("data", "")
                 serial_decoded = (
-                    str(int(serial_hex, 16))
+                    str(int.from_bytes(bytes.fromhex(serial_hex), byteorder="little"))
                     if serial_hex and len(serial_hex) == EXPECTED_SERIAL_LENGTH
                     else ""
                 )
@@ -75,7 +82,7 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
 
                 return self.async_create_entry(
                     title=title,
-                    data=user_input,
+                    data=initial_data,
                 )
             except JudoConnectivityModuleApiClientAuthenticationError:
                 errors["base"] = "auth"

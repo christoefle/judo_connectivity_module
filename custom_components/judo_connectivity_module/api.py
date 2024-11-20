@@ -9,6 +9,8 @@ from typing import Any
 import aiohttp
 import async_timeout
 
+from .utils import decode_hex_value
+
 LOGGER = logging.getLogger(__name__)
 
 # API Endpoints
@@ -19,7 +21,7 @@ ENDPOINT_LEAK_PROTECTION_ACTIVATE = "5100"
 ENDPOINT_LEAK_PROTECTION_DEACTIVATE = "5200"
 ENDPOINT_SLEEP_MODE_START = "5400"
 ENDPOINT_SLEEP_MODE_END = "5500"
-ENDPOINT_REMAINING_WATER = "6400"
+ENDPOINT_TOTAL_WATER = "2800"
 ENDPOINT_RESET_MESSAGE = "6300"
 ENDPOINT_DAILY_STATISTICS = "FB"
 ENDPOINT_WEEKLY_STATISTICS = "FC"
@@ -59,21 +61,31 @@ class JudoConnectivityModuleApiClient:
         self._password = password
         self._session = session
 
-    async def async_get_data(self) -> dict[str, Any]:
+    async def async_get_data(self, *, skip_static: bool = False) -> dict[str, Any]:
         """Get data from the API."""
         try:
             async with async_timeout.timeout(10):
-                device_type = await self.async_get_device_type()
-                serial_number = await self.async_get_serial_number()
-                software_version = await self.async_get_software_version()
-                remaining_water = await self.async_get_remaining_water()
+                data = {}
+                if not skip_static:
+                    device_type = await self.async_get_device_type()
+                    serial_number = await self.async_get_serial_number()
+                    data.update(
+                        {
+                            "device_type": device_type,
+                            "serial_number": serial_number,
+                        }
+                    )
 
-                return {
-                    "device_type": device_type,
-                    "serial_number": serial_number,
-                    "software_version": software_version,
-                    "remaining_water": remaining_water,
-                }
+                software_version = await self.async_get_software_version()
+                total_water_consumed = await self.async_get_total_water_consumed()
+
+                data.update(
+                    {
+                        "software_version": software_version,
+                        "total_water_consumed": total_water_consumed,
+                    }
+                )
+                return data
         except Exception as exception:
             raise JudoConnectivityModuleApiClientError(
                 JudoConnectivityModuleApiClientError.MESSAGE
@@ -83,29 +95,36 @@ class JudoConnectivityModuleApiClient:
         """Get device type."""
         return await self._async_get_endpoint(ENDPOINT_DEVICE_TYPE)
 
-    async def async_get_serial_number(self) -> str:
+    async def async_get_serial_number(self) -> dict[str, Any]:
         """Get serial number."""
-        return await self._async_get_endpoint(ENDPOINT_SERIAL_NUMBER)
+        try:
+            response = await self._async_get_endpoint(ENDPOINT_SERIAL_NUMBER)
+            data = response.get("data", "")
+            LOGGER.debug("Raw data received for serial number: %s", data)
+
+            value = decode_hex_value(data)
+            if value != "unknown":
+                return {"serial_number": value}
+            return {"serial_number": -1}  # noqa: TRY300
+        except (aiohttp.ClientError, ValueError, AttributeError):
+            LOGGER.exception("Error getting serial number: %s")
+            return {"serial_number": -1}
 
     async def async_get_software_version(self) -> str:
         """Get software version."""
         return await self._async_get_endpoint(ENDPOINT_SOFTWARE_VERSION)
 
-    async def async_get_remaining_water(self) -> dict[str, Any]:
-        """Get remaining water information."""
-        response = await self._async_get_endpoint(ENDPOINT_REMAINING_WATER)
-        data = response.get("data", "")
-        if (
-            len(data) >= 8  # noqa: PLR2004
-        ):  # Ensure we have enough data (8 hex characters)
-            # Convert hex to decimal
-            value_decimal = int(data, 16)
-            # Convert to cubic meters (divide by 1000) then to liters (multiply by 1000)
-            liters = value_decimal
-            return {
-                "liters": liters,
-            }
-        return {"liters": 0}
+    async def async_get_total_water_consumed(self) -> dict[str, Any]:
+        """Get total water consumed information."""
+        try:
+            response = await self._async_get_endpoint(ENDPOINT_TOTAL_WATER)
+            data = response.get("data", "")
+            LOGGER.debug("Raw data received for total water consumed: %s", data)
+            value = decode_hex_value(data)
+            return {"cubic_meters": value / 1000.0 if value != "unknown" else -1}
+        except (aiohttp.ClientError, ValueError, AttributeError):
+            LOGGER.exception("Error getting total water consumed")
+            return {"cubic_meters": -1}
 
     async def async_activate_leak_protection(self) -> None:
         """Activate leak protection."""
@@ -145,8 +164,10 @@ class JudoConnectivityModuleApiClient:
                 url,
                 auth=aiohttp.BasicAuth(self._username, self._password),
             )
+            LOGGER.debug("Response status: %d", response.status)
             _verify_response_or_raise(response)
             text = await response.text()
+            LOGGER.debug("Response text: %s", text)
             try:
                 return json.loads(text)
             except json.JSONDecodeError:

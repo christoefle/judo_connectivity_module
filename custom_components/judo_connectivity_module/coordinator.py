@@ -45,14 +45,30 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             # Get static data only once
             if not self._static_data:
-                client = self.config_entry.runtime_data.client
-                self._static_data = {
-                    "device_type": await client.async_get_device_type(),
-                    "serial_number": await client.async_get_serial_number(),
-                }
+                # Use initial data if available
+                config_data = self.config_entry.data
+                if (
+                    "initial_device_type" in config_data
+                    and "initial_serial_number" in config_data
+                ):
+                    LOGGER.debug("Using cached device information from config entry")
+                    self._static_data = {
+                        "device_type": config_data["initial_device_type"],
+                        "serial_number": config_data["initial_serial_number"],
+                    }
+                else:
+                    # Fall back to fetching from API
+                    LOGGER.debug("Fetching device information from API")
+                    client = self.config_entry.runtime_data.client
+                    self._static_data = {
+                        "device_type": await client.async_get_device_type(),
+                        "serial_number": await client.async_get_serial_number(),
+                    }
 
             # Get dynamic data
-            dynamic_data = await self.config_entry.runtime_data.client.async_get_data()
+            dynamic_data = await self.config_entry.runtime_data.client.async_get_data(
+                skip_static=True
+            )
 
             # Combine static and dynamic data
             combined_data = {**self._static_data, **dynamic_data}
