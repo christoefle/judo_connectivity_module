@@ -1,6 +1,6 @@
 """Tests for JUDO Connectivity Module response decoding."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from custom_components.judo_connectivity_module.utils import (
     decode_datetime_bytes,
@@ -49,10 +49,12 @@ def test_decode_datetime_bytes() -> None:
     # Test sample from operations.yaml
     decoded = decode_datetime_bytes("1c04170e041e")
     assert isinstance(decoded, datetime)
-    assert decoded == datetime(2023, 4, 28, 14, 4, 30)
+    assert decoded == datetime(2023, 4, 28, 14, 4, 30, tzinfo=timezone.utc)
 
     # Test edge case - January 1, 2023, 00:00:00
-    assert decode_datetime_bytes("010117000000") == datetime(2023, 1, 1, 0, 0, 0)
+    assert decode_datetime_bytes("010117000000") == datetime(
+        2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc
+    )
 
 
 def test_decode_serial_number() -> None:

@@ -1,6 +1,6 @@
 """Integration tests for JUDO Connectivity Module."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
 import pytest
@@ -32,11 +32,12 @@ async def test_coordinator_update(hass: HomeAssistant) -> None:
     }
     mock_client.async_read_datetime.return_value = {
         "data": "170807E71520",
-        "decoded": datetime(2023, 8, 23, 21, 32, 0),
+        "decoded": datetime(2023, 8, 23, 21, 32, 0, tzinfo=timezone.utc),  # noqa: UP017
     }
 
     coordinator = JudoConnectivityModuleDataUpdateCoordinator(
         hass=hass,
+        client=mock_client,
     )
 
     # Test initial data fetch

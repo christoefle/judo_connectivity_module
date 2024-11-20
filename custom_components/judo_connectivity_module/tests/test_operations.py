@@ -86,7 +86,7 @@ async def test_operations_with_samples(
     mock_response.text.return_value = '{"data": "6414CB7B"}'
     result = await api_client.async_read_start_date()
     assert result["data"] == "6414CB7B"
-    assert result["decoded"].isoformat() == "2023-03-17T21:20:00"
+    assert result["decoded"].isoformat() == "2023-03-17T20:20:11+00:00"
     mock_session.get.assert_called_with(
         "http://192.168.1.100/api/rest/0E00",
         auth=aiohttp.BasicAuth("admin", "password"),
