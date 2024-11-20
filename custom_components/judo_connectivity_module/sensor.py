@@ -110,10 +110,7 @@ class JudoConnectivityModuleSensor(JudoConnectivityModuleEntity, SensorEntity):
             raw_value = self.coordinator.data.get("software_version", {}).get("data")
             return self._convert_hex_to_version(raw_value)
         if self.entity_description.key == "serial_number":
-            raw_value = self.coordinator.data.get("serial_number", {}).get(
-                "serial_number"
-            )
-            return raw_value
+            return self.coordinator.data.get("serial_number", {}).get("serial_number")
         if self.entity_description.key == "total_water_consumed":
             return self.coordinator.data.get("total_water_consumed", {}).get(
                 "cubic_meters", 0
