@@ -61,13 +61,13 @@ entities:
   sleep_mode_start:
     type: "button"
     name: "Sleep Mode: Start"
-    icon: "mdi:power-sleep"
+    icon: "mdi:sleep"
     category: "config"
 
   sleep_mode_end:
     type: "button"
     name: "Sleep Mode: End"
-    icon: "mdi:power-on"
+    icon: "mdi:sleep-off"
     category: "config"
 
   vacation_mode_start:
