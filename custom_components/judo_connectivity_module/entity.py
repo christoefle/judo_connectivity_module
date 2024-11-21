@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import yaml
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import JudoConnectivityModuleDataUpdateCoordinator
+
+# Load device specifications
+API_SPEC_DIR = Path(__file__).parent / "api_spec"
+DEVICES = yaml.safe_load((API_SPEC_DIR / "devices.yaml").open(encoding="utf-8"))[
+    "device_types"
+]
 
 
 class JudoConnectivityModuleEntity(
@@ -17,35 +26,26 @@ class JudoConnectivityModuleEntity(
     _attr_attribution = ATTRIBUTION
     _attr_has_entity_name = True
 
-    VERSION_HEX_LENGTH = 6
-
-    def _convert_hex_to_version(self, hex_value: str) -> str:
-        """Convert hex string to version format."""
-        if not hex_value or len(hex_value) != self.VERSION_HEX_LENGTH:
-            return "unknown"
-        letter_code = int(hex_value[0:2], 16)
-        minor = int(hex_value[2:4], 16)
-        major = int(hex_value[4:6], 16)
-        patch = chr(letter_code)
-        return f"{major}.{minor}{patch}"
-
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information."""
-        device_type = self.coordinator.data.get("device_type", {}).get("data")
-        device_name = "PROM-i-SAFE" if device_type == "44" else "JUDO Device"
+        device_type = self.coordinator.data.get("get_device_type", {}).get("decoded")
+        device_name = DEVICES.get(str(device_type), {}).get("name", "JUDO Device")
 
-        # Get raw version and convert it
-        sw_version_raw = self.coordinator.data.get("software_version", {}).get(
-            "data", ""
+        sw_version_raw = self.coordinator.data.get("read_software_version", {}).get(
+            "decoded", ""
         )
-        sw_version = self._convert_hex_to_version(sw_version_raw)
+        sw_version = sw_version_raw if sw_version_raw else "unknown"
 
         return DeviceInfo(
             identifiers={
                 (
                     DOMAIN,
-                    str(self.coordinator.data.get("serial_number", {}).get("data", "")),
+                    str(
+                        self.coordinator.data.get("read_serial_number", {}).get(
+                            "decoded", ""
+                        )
+                    ),
                 )
             },
             name=device_name,

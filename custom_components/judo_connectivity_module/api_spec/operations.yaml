@@ -1,0 +1,127 @@
+# API Operations
+api_version: "3.13" # Note: Only parts of the API are listed / supported
+
+operations: # just a subset of operations listed in the api spec dev. extend as needed.
+  - name: get_device_type
+    description: "Reads the device type"
+    command: "FF00"
+    response:
+      pattern: "hex_value"
+      length: 1
+      description: "Single byte representing device type"
+
+  - name: read_serial_number
+    description: "Reads the device serial number"
+    command: "0600"
+    response:
+      pattern: "hex_value"
+      length: 8
+      description: "8-byte serial number"
+
+  - name: read_total_water
+    description: "Reads the total water volume"
+    command: "2800"
+    response:
+      pattern: "water_volume"
+      length: 4
+      description: "4-byte water volume in liters"
+
+  - name: read_start_date
+    description: "Reads the device start date"
+    command: "0E00"
+    response:
+      pattern: "timestamp"
+      length: 4
+      description: "4-byte UNIX timestamp"
+
+  - name: read_software_version
+    description: "Reads the software version"
+    command: "0100"
+    response:
+      pattern: "version"
+      length: 6
+      description: "6-byte version number"
+
+  - name: reset_message
+    description: "Resets the message or error state"
+    command: "6300"
+
+  - name: leak_protection_activate
+    description: "Activates leak protection"
+    command: "5100"
+
+  - name: leak_protection_deactivate
+    description: "Deactivates leak protection"
+    command: "5200"
+
+  - name: sleep_mode_start
+    description: "Starts sleep mode"
+    command: "5400"
+
+  - name: sleep_mode_end
+    description: "Ends sleep mode"
+    command: "5500"
+
+  - name: vacation_mode_start
+    description: "Activates vacation mode"
+    command: "5700"
+
+  - name: vacation_mode_end
+    description: "Deactivates vacation mode"
+    command: "5800"
+
+  - name: read_daily_statistics
+    description: "Fetches daily water consumption statistics"
+    command: "FB{date}"
+    parameters:
+      - name: date
+        pattern: "hex_date"
+    response:
+      pattern: "water_volume"
+      statistics: "hourly"
+      length: 32
+      description: "32 bytes representing 24 hourly consumption values in liters (converted to m³)"
+
+  - name: read_weekly_statistics
+    description: "Fetches weekly water consumption statistics"
+    command: "FC{week}"
+    parameters:
+      - name: week
+        pattern: "hex_week"
+    response:
+      pattern: "water_volume"
+      statistics: "daily"
+      length: 28
+      description: "28 bytes representing 7 daily consumption values in liters (converted to m³)"
+
+  - name: read_monthly_statistics
+    description: "Fetches monthly water consumption statistics"
+    command: "FD{month}"
+    parameters:
+      - name: month
+        pattern: "hex_month"
+    response:
+      pattern: "water_volume"
+      statistics: "monthly"
+      length: 124
+      description: "Up to 124 bytes representing daily consumption values for up to 31 days in liters (converted to m³)"
+
+  - name: read_yearly_statistics
+    description: "Fetches yearly water consumption statistics"
+    command: "FE{year}"
+    parameters:
+      - name: year
+        pattern: "hex_year"
+    response:
+      pattern: "water_volume"
+      statistics: "monthly"
+      length: 48
+      description: "48 bytes representing 12 monthly consumption values in liters (converted to m³)"
+
+  - name: read_datetime
+    description: "Reads the current date and time from the device"
+    command: "5900"
+    response:
+      pattern: "datetime_bytes"
+      length: 6
+      description: "6 bytes representing date and time (day, month, year, hour, minute, second)"

@@ -2,45 +2,59 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import async_timeout
+import yaml
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 LOGGER = logging.getLogger(__name__)
 
-# API Endpoints
-ENDPOINT_DEVICE_TYPE = "FF00"
-ENDPOINT_SERIAL_NUMBER = "0600"
-ENDPOINT_SOFTWARE_VERSION = "0100"
-ENDPOINT_LEAK_PROTECTION_ACTIVATE = "5100"
-ENDPOINT_LEAK_PROTECTION_DEACTIVATE = "5200"
-ENDPOINT_SLEEP_MODE_START = "5400"
-ENDPOINT_SLEEP_MODE_END = "5500"
-ENDPOINT_REMAINING_WATER = "6400"
-ENDPOINT_RESET_MESSAGE = "6300"
-ENDPOINT_DAILY_STATISTICS = "FB"
-ENDPOINT_WEEKLY_STATISTICS = "FC"
+# Load API specifications
+API_SPEC_DIR = Path(__file__).parent / "api_spec"
+OPERATIONS = yaml.safe_load((API_SPEC_DIR / "operations.yaml").open(encoding="utf-8"))[
+    "operations"
+]
+BASE_SPEC = yaml.safe_load((API_SPEC_DIR / "base.yaml").open(encoding="utf-8"))
+
+# HTTP Status Codes
+HTTP_SUCCESS_STATUS = 200
 
 
 class JudoConnectivityModuleApiClientError(Exception):
-    """Exception to indicate a general API error."""
+    """Exception raised for general JUDO Connectivity Module API errors."""
 
-    MESSAGE = "An error occurred in the JUDO Connectivity Module API Client."
+    def __init__(self, message: str = "API error occurred") -> None:
+        """Initialize the exception."""
+        self.message = message
+        super().__init__(self.message)
+
+
+class JudoConnectivityModuleApiClientAuthenticationError(Exception):
+    """Exception raised for authentication errors with the JUDO Connectivity Module."""
+
+    def __init__(self, message: str = "Authentication failed") -> None:
+        """Initialize the exception."""
+        self.message = message
+        super().__init__(self.message)
 
 
 class JudoConnectivityModuleApiClientCommunicationError(
     JudoConnectivityModuleApiClientError
 ):
-    """Exception to indicate a communication error."""
+    """Exception raised for communication errors with the JUDO Connectivity Module."""
 
-
-class JudoConnectivityModuleApiClientAuthenticationError(
-    JudoConnectivityModuleApiClientError
-):
-    """Exception to indicate an authentication error."""
+    def __init__(self, message: str = "Communication failed") -> None:
+        """Initialize the exception."""
+        self.message = message
+        super().__init__(self.message)
 
 
 class JudoConnectivityModuleApiClient:
@@ -59,94 +73,88 @@ class JudoConnectivityModuleApiClient:
         self._password = password
         self._session = session
 
-    async def async_get_data(self) -> dict[str, Any]:
-        """Get data from the API."""
-        try:
-            async with async_timeout.timeout(10):
-                device_type = await self.async_get_device_type()
-                serial_number = await self.async_get_serial_number()
-                software_version = await self.async_get_software_version()
-                remaining_water = await self.async_get_remaining_water()
+        # Dynamically load decoder functions from utils module
+        self._decoders = self._load_decoders()
 
-                return {
-                    "device_type": device_type,
-                    "serial_number": serial_number,
-                    "software_version": software_version,
-                    "remaining_water": remaining_water,
-                }
-        except Exception as exception:
-            raise JudoConnectivityModuleApiClientError(
-                JudoConnectivityModuleApiClientError.MESSAGE
-            ) from exception
+    def _load_decoders(self) -> dict[str, Callable]:
+        """Dynamically load decoder functions from patterns in base.yaml."""
+        utils = importlib.import_module(".utils", package=__package__)
+        patterns = BASE_SPEC.get("response_patterns", {})
 
-    async def async_get_device_type(self) -> str:
-        """Get device type."""
-        return await self._async_get_endpoint(ENDPOINT_DEVICE_TYPE)
+        decoders = {}
+        for pattern_name, pattern_spec in patterns.items():
+            decoder_name = pattern_spec.get("decode_method")
+            if decoder_name and hasattr(utils, decoder_name):
+                decoders[pattern_name] = getattr(utils, decoder_name)
 
-    async def async_get_serial_number(self) -> str:
-        """Get serial number."""
-        return await self._async_get_endpoint(ENDPOINT_SERIAL_NUMBER)
+        return decoders
 
-    async def async_get_software_version(self) -> str:
-        """Get software version."""
-        return await self._async_get_endpoint(ENDPOINT_SOFTWARE_VERSION)
+    def _verify_response_or_raise(self, response: aiohttp.ClientResponse) -> None:
+        """Verify that the response is valid or raise an exception."""
+        if response.status != HTTP_SUCCESS_STATUS:
+            raise aiohttp.ClientResponseError(
+                response.request_info,
+                response.history,
+                status=response.status,
+                message=f"HTTP {response.status}",
+            )
 
-    async def async_get_remaining_water(self) -> dict[str, Any]:
-        """Get remaining water information."""
-        response = await self._async_get_endpoint(ENDPOINT_REMAINING_WATER)
-        data = response.get("data", "")
-        if (
-            len(data) >= 8  # noqa: PLR2004
-        ):  # Ensure we have enough data (8 hex characters)
-            # Convert hex to decimal
-            value_decimal = int(data, 16)
-            # Convert to cubic meters (divide by 1000) then to liters (multiply by 1000)
-            liters = value_decimal
-            return {
-                "liters": liters,
-            }
-        return {"liters": 0}
+    def __getattr__(self, name: str) -> Callable:
+        """Dynamically handle API operation calls."""
+        if name.startswith("async_"):
+            operation_name = name[6:]  # Remove async_ prefix
+            operation = next(
+                (op for op in OPERATIONS if op["name"] == operation_name),
+                None,
+            )
+            if operation:
+                return lambda **kwargs: self._async_call_operation(operation, **kwargs)
 
-    async def async_activate_leak_protection(self) -> None:
-        """Activate leak protection."""
-        await self._async_get_endpoint(ENDPOINT_LEAK_PROTECTION_ACTIVATE)
+        error_message = f"No attribute {name}"
+        raise AttributeError(error_message)
 
-    async def async_deactivate_leak_protection(self) -> None:
-        """Deactivate leak protection."""
-        await self._async_get_endpoint(ENDPOINT_LEAK_PROTECTION_DEACTIVATE)
+    async def _async_call_operation(
+        self, operation: dict[str, Any], **params: Any
+    ) -> dict[str, Any]:
+        """Execute an API operation based on its specification."""
+        # Format command with parameters if needed
+        command = operation["command"]
+        if params and "{" in command:
+            command = command.format(**params)
 
-    async def async_start_sleep_mode(self) -> None:
-        """Start sleep mode."""
-        await self._async_get_endpoint(ENDPOINT_SLEEP_MODE_START)
+        # Make API call
+        response = await self._async_get_endpoint(command)
 
-    async def async_end_sleep_mode(self) -> None:
-        """End sleep mode."""
-        await self._async_get_endpoint(ENDPOINT_SLEEP_MODE_END)
+        # Process response according to pattern
+        if "response" in operation:
+            pattern_name = operation["response"]["pattern"]
+            if pattern_name in self._decoders:
+                decoder = self._decoders[pattern_name]
+                data = response.get("data", "")
+                try:
+                    decoded_value = decoder(data)
+                    return {  # noqa: TRY300
+                        "data": data,  # Original hex string
+                        "decoded": decoded_value,  # Decoded value
+                    }
+                except (ValueError, TypeError):
+                    LOGGER.exception("Error decoding response: %s")
+                    return {"data": data, "decoded": "unknown"}
 
-    async def async_reset_message(self) -> None:
-        """Reset message."""
-        await self._async_get_endpoint(ENDPOINT_RESET_MESSAGE)
-
-    async def async_get_daily_statistics(self, date: str) -> dict:
-        """Get daily statistics."""
-        return await self._async_get_endpoint(f"{ENDPOINT_DAILY_STATISTICS}{date}")
-
-    async def async_get_weekly_statistics(self, week: str) -> dict:
-        """Get weekly statistics."""
-        return await self._async_get_endpoint(f"{ENDPOINT_WEEKLY_STATISTICS}{week}")
+        return response
 
     async def _async_get_endpoint(self, endpoint: str) -> dict:
         """Make a GET request to an endpoint."""
         url = f"http://{self._hostname}/api/rest/{endpoint}"
-        LOGGER.debug("Making GET request to: %s", url)
 
         async with async_timeout.timeout(10):
             response = await self._session.get(
                 url,
                 auth=aiohttp.BasicAuth(self._username, self._password),
             )
-            _verify_response_or_raise(response)
+            self._verify_response_or_raise(response)
             text = await response.text()
+
             try:
                 return json.loads(text)
             except json.JSONDecodeError:
@@ -154,24 +162,15 @@ class JudoConnectivityModuleApiClient:
 
     @property
     def hostname(self) -> str:
-        """Return the hostname."""
+        """Get the hostname."""
         return self._hostname
 
     @property
     def username(self) -> str:
-        """Return the username."""
+        """Get the username."""
         return self._username
 
     @property
     def password(self) -> str:
-        """Return the password."""
+        """Get the password."""
         return self._password
-
-
-def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
-    """Verify that response is valid."""
-    if response.status in (401, 403):
-        raise JudoConnectivityModuleApiClientAuthenticationError(
-            JudoConnectivityModuleApiClientAuthenticationError.MESSAGE
-        )
-    response.raise_for_status()

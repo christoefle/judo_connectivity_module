@@ -1,13 +1,15 @@
 {
   "domain": "judo_connectivity_module",
-  "name": "Judo Connectivity Module",
+  "name": "JUDO Connectivity Module",
   "codeowners": [
     "@christoefle"
   ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/christoefle/judo_connectivity_module",
-  "iot_class": "cloud_polling",
+  "integration_type": "device",
+  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/christoefle/judo_connectivity_module/issues",
-  "version": "1.0.0"
+  "requirements": [],
+  "version": "0.1.0"
 }

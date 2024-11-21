@@ -3,33 +3,30 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
+    JudoConnectivityModuleApiClient,
     JudoConnectivityModuleApiClientAuthenticationError,
     JudoConnectivityModuleApiClientError,
 )
 from .const import DOMAIN, LOGGER
+from .helpers import load_entity_configs
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-    from .data import JudoConnectivityModuleConfigEntry
 
-
-# https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the API."""
-
-    config_entry: JudoConnectivityModuleConfigEntry
-    _static_data: ClassVar[dict[str, Any]] = {}
 
     def __init__(
         self,
         hass: HomeAssistant,
+        client: JudoConnectivityModuleApiClient,
     ) -> None:
         """Initialize."""
         super().__init__(
@@ -38,28 +35,21 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
             name=DOMAIN,
             update_interval=timedelta(hours=1),
         )
-        self._static_data = {}
+        self._entity_configs = load_entity_configs()
+        self._client = client
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via library."""
         try:
-            # Get static data only once
-            if not self._static_data:
-                client = self.config_entry.runtime_data.client
-                self._static_data = {
-                    "device_type": await client.async_get_device_type(),
-                    "serial_number": await client.async_get_serial_number(),
-                }
-
-            # Get dynamic data
-            dynamic_data = await self.config_entry.runtime_data.client.async_get_data()
-
-            # Combine static and dynamic data
-            combined_data = {**self._static_data, **dynamic_data}
-
+            data = {}
+            # Get data for all sensor entities
+            for entity_id, config in self._entity_configs.items():
+                if config["type"] == "sensor":
+                    method_name = f"async_{entity_id}"
+                    if hasattr(self._client, method_name):
+                        data[entity_id] = await getattr(self._client, method_name)()
+            return data  # noqa: TRY300
         except JudoConnectivityModuleApiClientAuthenticationError as exception:
             raise ConfigEntryAuthFailed(exception) from exception
         except JudoConnectivityModuleApiClientError as exception:
             raise UpdateFailed(exception) from exception
-        else:
-            return combined_data
