@@ -14,6 +14,16 @@ response_patterns:
     decode_method: "decode_water_volume"
     description: "Hex value representing water volume (converts from liters to m³)"
 
+  water_hardness:
+    encoding: "hex"
+    decode_method: "decode_water_hardness"
+    description: "Hex value representing water hardness in °dH"
+
+  salt_weight:
+    encoding: "hex"
+    decode_method: "decode_salt_weight"
+    description: "Hex value representing salt weight in kg"
+
   timestamp:
     encoding: "hex"
     decode_method: "decode_timestamp"

@@ -18,6 +18,21 @@ def decode_water_volume(value: str) -> float:
     return round(liters / 1000, 3)  # Convert to m³ with 3 decimal places
 
 
+def decode_water_hardness(value: str) -> int:
+    """Decode a hex string to water hardness in °dH."""
+    return int.from_bytes(bytes.fromhex(value), byteorder="little")
+
+
+def decode_salt_weight(value: str) -> float:
+    """Decode a hex string to salt weight in kilograms."""
+    if not value or len(value) < 4:
+        return 0.0
+
+    weight_hex = value[0:4]
+    grams = int.from_bytes(bytes.fromhex(weight_hex), byteorder="little")
+    return round(grams / 1000, 2)  # Convert to kg with 2 decimal places
+
+
 def decode_timestamp(value: str) -> datetime:
     """Decode a hex string to a UNIX timestamp in UTC."""
     timestamp = int.from_bytes(bytes.fromhex(value), byteorder="big")
@@ -35,8 +50,11 @@ def decode_version(value: str) -> str:
     return f"{major}.{minor}{letter}"
 
 
-def decode_datetime_bytes(value: str) -> datetime:
+def decode_datetime_bytes(value: str) -> datetime | None:
     """Decode a hex string to a datetime object in UTC."""
+    if not value or len(value) < 12:
+        return None
+
     day = int(value[0:2], 16)
     month = int(value[2:4], 16)
     year = int(value[4:6], 16) + 2000  # Assuming years are 20xx

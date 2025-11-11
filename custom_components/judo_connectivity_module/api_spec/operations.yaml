@@ -2,7 +2,7 @@
 api_version: "3.13" # Note: Only parts of the API are listed / supported
 
 operations: # just a subset of operations listed in the api spec dev. extend as needed.
-  - name: get_device_type
+  - name: read_device_type
     description: "Reads the device type"
     command: "FF00"
     response:
@@ -26,6 +26,34 @@ operations: # just a subset of operations listed in the api spec dev. extend as 
       length: 4
       description: "4-byte water volume in liters"
 
+  - name: read_total_softened_water
+    description: "Reads the total softened water volume"
+    command: "2900"
+    response:
+      pattern: "water_volume"
+      length: 4
+      description: "4-byte softened water volume in liters"
+
+  - name: read_desired_water_hardness
+    description: "Reads the desired water hardness setting"
+    command: "5100"
+    response:
+      pattern: "water_hardness"
+      length: 2
+      description: "2-byte desired water hardness in °dH"
+
+  - name: read_salt_storage
+    description: "Reads the remaining salt storage."
+    command: "5600"
+    response:
+      pattern: "salt_weight"
+      length: 2
+      description: "2-byte desired water hardness in kg"
+
+  - name: start_regeneration
+    description: "Starting the regeneration."
+    command: "350000"
+
   - name: read_start_date
     description: "Reads the device start date"
     command: "0E00"
@@ -39,8 +67,8 @@ operations: # just a subset of operations listed in the api spec dev. extend as 
     command: "0100"
     response:
       pattern: "version"
-      length: 6
-      description: "6-byte version number"
+      length: 3
+      description: "3-byte version number"
 
   - name: reset_message
     description: "Resets the message or error state"
