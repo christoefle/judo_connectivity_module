@@ -12,6 +12,8 @@ from homeassistant.components.sensor import (
 from .entity import JudoConnectivityModuleEntity
 from .helpers import load_entity_configs
 
+from .api_spec import DEVICE_SPEC
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -47,13 +49,18 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the sensor platform."""
-    entity_configs = load_entity_configs()
+
+    entity_configs = load_entity_configs()  # FIXME: Do it async
+    device_type_id = entry.runtime_data.coordinator.data.get(
+        "read_device_type", {}
+    ).get("decoded", "0")
+    device_spec = DEVICE_SPEC.get("device_types", {}).get(str(device_type_id))
 
     # Filter for sensor entities
     sensor_entities = [
         (key, config)
         for key, config in entity_configs.items()
-        if config.get("type") == "sensor"
+        if config.get("type") == "sensor" and key in device_spec.get("capabilities", {})
     ]
 
     async_add_entities(

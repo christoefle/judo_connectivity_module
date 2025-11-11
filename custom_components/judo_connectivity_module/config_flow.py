@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -22,11 +23,11 @@ from .const import DOMAIN, LOGGER
 from .utils import decode_serial_number, get_device_name
 
 # Load environment variables from .env file
-env_path = Path(__file__).parent / ".env"
-load_dotenv(env_path)
+# env_path = Path(__file__).parent / ".env"
+# load_dotenv(env_path)
 
 # Get default values from environment variables or fall back to defaults
-DEFAULT_HOST = os.getenv("JUDO_DEFAULT_HOST", "192.168.1.1")
+DEFAULT_HOST = os.getenv("JUDO_DEFAULT_HOST", "192.168.178.80")
 DEFAULT_USERNAME = os.getenv("JUDO_DEFAULT_USERNAME", "admin")
 DEFAULT_PASSWORD = os.getenv("JUDO_DEFAULT_PASSWORD", "Connectivity")
 
@@ -51,7 +52,7 @@ class JudoConnectivityModuleFlowHandler(config_entries.ConfigFlow, domain=DOMAIN
                 )
 
                 # Get device information for the title
-                device_type = await client.async_get_device_type()
+                device_type = await client.async_read_device_type()
                 serial_number = await client.async_read_serial_number()
 
                 # Store the initial data

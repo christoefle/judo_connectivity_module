@@ -1,5 +1,5 @@
 entities:
-  get_device_type:
+  read_device_type:
     type: "sensor"
     name: "Device Type"
     icon: "mdi:water-pump"
@@ -19,6 +19,38 @@ entities:
     state_class: "total"
     unit: "m³"
     category: "diagnostic"
+
+  read_total_softened_water:
+    type: "sensor"
+    name: "Total Softened Water Volume"
+    icon: "mdi:water"
+    device_class: "water"
+    state_class: "total"
+    unit: "m³"
+    category: "diagnostic"
+
+  read_desired_water_hardness:
+    type: "sensor"
+    name: "Desired Water Hardness"
+    icon: "mdi:water-opacity"
+    device_class: "water"
+    unit: "°dH"
+    category: "diagnostic"
+
+  read_salt_storage:
+    type: "sensor"
+    name: "Remaining Salt Storage"
+    icon: "mdi:shaker-outline"
+    device_class: "weight"
+    unit: "kg"
+    category: "diagnostic"
+
+  start_regeneration:
+    type: "button"
+    name: "Start Regeneration"
+    command: "start_regeneration"
+    icon: "mdi:reload"
+    category: "config"
 
   read_software_version:
     type: "sensor"

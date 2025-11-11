@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     from .data import JudoConnectivityModuleConfigEntry
 
 PLATFORMS: list[Platform] = [
-    Platform.SENSOR,
     Platform.BUTTON,
+    Platform.SENSOR,
 ]
 
 

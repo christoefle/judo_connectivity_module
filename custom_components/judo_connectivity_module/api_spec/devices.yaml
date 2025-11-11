@@ -24,3 +24,24 @@ device_types:
       - sleep_mode_end
       - vacation_mode_start
       - vacation_mode_end
+  "50":
+    name: "i-soft"
+    description: "Fully automatic water softening system"
+    capabilities:
+      - read_device_type
+      - read_serial_number
+      - read_software_version
+      - read_start_date
+      - read_operating_hours
+
+      - read_desired_water_hardness
+      - read_total_water
+      - read_total_softened_water
+      - read_salt_storage
+
+      - start_regeneration
+
+      - read_daily_statistics
+      - read_weekly_statistics
+      - read_monthly_statistics
+      - read_yearly_statistics

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import json
 import logging
@@ -9,8 +10,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
-import async_timeout
 import yaml
+
+from .api_spec import OPERATIONS_SPEC, BASE_SPEC
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -18,11 +20,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 # Load API specifications
-API_SPEC_DIR = Path(__file__).parent / "api_spec"
-OPERATIONS = yaml.safe_load((API_SPEC_DIR / "operations.yaml").open(encoding="utf-8"))[
-    "operations"
-]
-BASE_SPEC = yaml.safe_load((API_SPEC_DIR / "base.yaml").open(encoding="utf-8"))
+OPERATIONS = OPERATIONS_SPEC["operations"]
 
 # HTTP Status Codes
 HTTP_SUCCESS_STATUS = 200
@@ -113,6 +111,13 @@ class JudoConnectivityModuleApiClient:
         error_message = f"No attribute {name}"
         raise AttributeError(error_message)
 
+    def get_operation(self, operation_name: str) -> dict | None:
+        """Get operation."""
+        return next(
+            (op for op in OPERATIONS if op["name"] == operation_name),
+            None,
+        )
+
     async def _async_call_operation(
         self, operation: dict[str, Any], **params: Any
     ) -> dict[str, Any]:
@@ -147,7 +152,7 @@ class JudoConnectivityModuleApiClient:
         """Make a GET request to an endpoint."""
         url = f"http://{self._hostname}/api/rest/{endpoint}"
 
-        async with async_timeout.timeout(10):
+        async with asyncio.timeout(10):
             response = await self._session.get(
                 url,
                 auth=aiohttp.BasicAuth(self._username, self._password),
