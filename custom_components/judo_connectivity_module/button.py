@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.exceptions import HomeAssistantError
 
+from .api import JudoConnectivityModuleApiClientError
 from .entity import JudoConnectivityModuleEntity
 from .helpers import load_entity_configs
 
@@ -62,6 +64,17 @@ class JudoConnectivityModuleButton(JudoConnectivityModuleEntity, ButtonEntity):
             f"{coordinator.config_entry.entry_id}_{entity_description.key}"
         )
 
-    def press(self) -> None:
-        """Handle the button press synchronously."""
-        self.hass.async_create_task(self.async_press())
+    async def async_press(self) -> None:
+        """
+        Send the button's command to the device.
+
+        The old synchronous press() only re-scheduled async_press() (HA's default
+        async_press runs press() in a worker thread), so no command was ever sent.
+        """
+        client = self.coordinator.config_entry.runtime_data.client
+        operation = getattr(client, f"async_{self.entity_description.key}")
+        try:
+            await operation()
+        except JudoConnectivityModuleApiClientError as exception:
+            msg = f"JUDO: '{self.entity_description.name}' failed: {exception}"
+            raise HomeAssistantError(msg) from exception
