@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import json
 import logging
@@ -26,6 +27,12 @@ BASE_SPEC = yaml.safe_load((API_SPEC_DIR / "base.yaml").open(encoding="utf-8"))
 
 # HTTP Status Codes
 HTTP_SUCCESS_STATUS = 200
+HTTP_UNAUTHORIZED = 401
+HTTP_TOO_MANY_REQUESTS = 429
+
+# The module answers HTTP 429 when requests come in too fast (seen in the field after a burst
+# of sequential reads). All requests go through one lock with a minimum gap between them.
+MIN_REQUEST_INTERVAL = 2.0  # seconds
 
 
 class JudoConnectivityModuleApiClientError(Exception):
@@ -57,6 +64,17 @@ class JudoConnectivityModuleApiClientCommunicationError(
         super().__init__(self.message)
 
 
+class JudoConnectivityModuleApiClientRateLimitError(
+    JudoConnectivityModuleApiClientCommunicationError
+):
+    """Exception raised when the module answers HTTP 429 (too many requests)."""
+
+    def __init__(self, message: str = "Rate limited by the device (HTTP 429)") -> None:
+        """Initialize the exception."""
+        self.message = message
+        super().__init__(self.message)
+
+
 class JudoConnectivityModuleApiClient:
     """JUDO Connectivity Module API Client."""
 
@@ -72,6 +90,8 @@ class JudoConnectivityModuleApiClient:
         self._username = username
         self._password = password
         self._session = session
+        self._lock = asyncio.Lock()
+        self._last_request = 0.0
 
         # Dynamically load decoder functions from utils module
         self._decoders = self._load_decoders()
@@ -91,13 +111,13 @@ class JudoConnectivityModuleApiClient:
 
     def _verify_response_or_raise(self, response: aiohttp.ClientResponse) -> None:
         """Verify that the response is valid or raise an exception."""
+        if response.status == HTTP_UNAUTHORIZED:
+            raise JudoConnectivityModuleApiClientAuthenticationError
+        if response.status == HTTP_TOO_MANY_REQUESTS:
+            raise JudoConnectivityModuleApiClientRateLimitError
         if response.status != HTTP_SUCCESS_STATUS:
-            raise aiohttp.ClientResponseError(
-                response.request_info,
-                response.history,
-                status=response.status,
-                message=f"HTTP {response.status}",
-            )
+            msg = f"HTTP {response.status}"
+            raise JudoConnectivityModuleApiClientCommunicationError(msg)
 
     def __getattr__(self, name: str) -> Callable:
         """Dynamically handle API operation calls."""
@@ -147,13 +167,26 @@ class JudoConnectivityModuleApiClient:
         """Make a GET request to an endpoint."""
         url = f"http://{self._hostname}/api/rest/{endpoint}"
 
-        async with async_timeout.timeout(10):
-            response = await self._session.get(
-                url,
-                auth=aiohttp.BasicAuth(self._username, self._password),
-            )
-            self._verify_response_or_raise(response)
-            text = await response.text()
+        async with self._lock:
+            loop = asyncio.get_running_loop()
+            wait = self._last_request + MIN_REQUEST_INTERVAL - loop.time()
+            if wait > 0:
+                await asyncio.sleep(wait)
+            try:
+                async with async_timeout.timeout(10):
+                    response = await self._session.get(
+                        url,
+                        auth=aiohttp.BasicAuth(self._username, self._password),
+                    )
+                    self._verify_response_or_raise(response)
+                    text = await response.text()
+            except (aiohttp.ClientError, TimeoutError) as exception:
+                msg = f"Error talking to {self._hostname}: {exception}"
+                raise JudoConnectivityModuleApiClientCommunicationError(
+                    msg
+                ) from exception
+            finally:
+                self._last_request = loop.time()
 
             try:
                 return json.loads(text)

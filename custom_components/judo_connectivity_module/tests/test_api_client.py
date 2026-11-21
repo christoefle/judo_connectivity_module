@@ -7,6 +7,9 @@ import pytest
 
 from custom_components.judo_connectivity_module.api import (
     JudoConnectivityModuleApiClient,
+    JudoConnectivityModuleApiClientAuthenticationError,
+    JudoConnectivityModuleApiClientCommunicationError,
+    JudoConnectivityModuleApiClientRateLimitError,
 )
 
 
@@ -35,3 +38,38 @@ async def test_get_device_type(
         "http://192.168.1.100/api/rest/FF00",
         auth=aiohttp.BasicAuth("admin", "password"),
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("status", "error"),
+    [
+        (429, JudoConnectivityModuleApiClientRateLimitError),
+        (401, JudoConnectivityModuleApiClientAuthenticationError),
+        (500, JudoConnectivityModuleApiClientCommunicationError),
+    ],
+)
+async def test_http_errors_are_mapped(
+    api_client: JudoConnectivityModuleApiClient,
+    mock_session: AsyncMock,
+    status: int,
+    error: type[Exception],
+) -> None:
+    """HTTP errors become integration errors (429 is retried by the coordinator)."""
+    mock_response = AsyncMock()
+    mock_response.status = status
+    mock_session.get = AsyncMock(return_value=mock_response)
+
+    with pytest.raises(error):
+        await api_client.async_get_device_type()
+
+
+@pytest.mark.asyncio
+async def test_network_error_is_mapped(
+    api_client: JudoConnectivityModuleApiClient, mock_session: AsyncMock
+) -> None:
+    """Connection problems become a communication error, not a raw aiohttp error."""
+    mock_session.get = AsyncMock(side_effect=aiohttp.ClientConnectionError("down"))
+
+    with pytest.raises(JudoConnectivityModuleApiClientCommunicationError):
+        await api_client.async_get_device_type()

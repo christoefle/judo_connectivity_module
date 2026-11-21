@@ -37,17 +37,22 @@ class JudoConnectivityModuleDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self._entity_configs = load_entity_configs()
         self._client = client
+        # values that never change while HA runs (serial, type, ...) are read only once
+        self._static: dict[str, Any] = {}
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via library."""
         try:
-            data = {}
-            # Get data for all sensor entities
+            data = dict(self._static)
+            # Get data for all sensor entities (static ones only on the first run)
             for entity_id, config in self._entity_configs.items():
-                if config["type"] == "sensor":
-                    method_name = f"async_{entity_id}"
-                    if hasattr(self._client, method_name):
-                        data[entity_id] = await getattr(self._client, method_name)()
+                if config["type"] != "sensor" or entity_id in self._static:
+                    continue
+                method_name = f"async_{entity_id}"
+                if hasattr(self._client, method_name):
+                    data[entity_id] = await getattr(self._client, method_name)()
+                    if config.get("static"):
+                        self._static[entity_id] = data[entity_id]
             return data  # noqa: TRY300
         except JudoConnectivityModuleApiClientAuthenticationError as exception:
             raise ConfigEntryAuthFailed(exception) from exception
