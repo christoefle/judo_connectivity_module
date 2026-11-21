@@ -30,8 +30,9 @@ HTTP_SUCCESS_STATUS = 200
 HTTP_UNAUTHORIZED = 401
 HTTP_TOO_MANY_REQUESTS = 429
 
-# The module answers HTTP 429 when requests come in too fast (seen in the field after a burst
-# of sequential reads). All requests go through one lock with a minimum gap between them.
+# The module answers HTTP 429 when requests come in too fast (seen after a
+# burst of sequential reads). All requests go through one lock with a minimum
+# gap between them.
 MIN_REQUEST_INTERVAL = 2.0  # seconds
 
 

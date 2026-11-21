@@ -8,7 +8,6 @@ from homeassistant.components.button import ButtonEntity, ButtonEntityDescriptio
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import JudoConnectivityModuleApiClientError
-
 from .entity import JudoConnectivityModuleEntity
 from .helpers import load_entity_configs
 
@@ -66,7 +65,8 @@ class JudoConnectivityModuleButton(JudoConnectivityModuleEntity, ButtonEntity):
         )
 
     async def async_press(self) -> None:
-        """Send the button's command to the device.
+        """
+        Send the button's command to the device.
 
         The old synchronous press() only re-scheduled async_press() (HA's default
         async_press runs press() in a worker thread), so no command was ever sent.
